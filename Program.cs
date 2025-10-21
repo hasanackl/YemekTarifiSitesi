@@ -10,16 +10,16 @@ using YemekTarifAPI.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// DbContext
+// -------------------- DB --------------------
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Identity
+// -------------------- IDENTITY --------------------
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
-// JWT
+// -------------------- JWT --------------------
 var jwt = builder.Configuration.GetSection("Jwt");
 var key = Encoding.UTF8.GetBytes(jwt["Key"]!);
 
@@ -44,19 +44,32 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
+// -------------------- JSON --------------------
 builder.Services.AddControllers().AddJsonOptions(o =>
 {
-    // EF navigation döngülerinde swagger/json patlamasın
     o.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
 });
 
-// Swagger GEN (dokümanı üret)
+// -------------------- CORS (Live Server için) --------------------
+var FrontendCors = "FrontendCors";
+builder.Services.AddCors(opt =>
+{
+    opt.AddPolicy(FrontendCors, p =>
+        p.WithOrigins(
+            "http://127.0.0.1:5500",
+            "http://localhost:5112"   // VSCode Live Server
+        )
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        // .AllowCredentials() // cookie kullanacaksan aç; bearer için gerekmez
+    );
+});
+
+// -------------------- SWAGGER --------------------
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "YemekTarifAPI", Version = "v1" });
-
-    // Bearer auth’ı Swagger UI’da göster
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -69,8 +82,9 @@ builder.Services.AddSwaggerGen(c =>
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
-            new OpenApiSecurityScheme { Reference = new OpenApiReference
-                { Type = ReferenceType.SecurityScheme, Id = "Bearer" } },
+            new OpenApiSecurityScheme {
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+            },
             Array.Empty<string>()
         }
     });
@@ -78,14 +92,18 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// Swagger MIDDLEWARE (UI ve json’ı yayına al)
+// -------------------- PIPELINE --------------------
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "YemekTarifAPI v1");
 });
 
+// HTTPS yönlendirme (geliştirmede da açık kalsın)
 app.UseHttpsRedirection();
+
+// CORS mutlaka Auth'tan ÖNCE olmalı
+app.UseCors(FrontendCors);
 
 app.UseAuthentication();
 app.UseAuthorization();

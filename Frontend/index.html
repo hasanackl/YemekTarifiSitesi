@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>YemekTarif • Frontend</title>
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <style>
+    /* === Tema Renkleri === */
+    :root{
+      --brand-red:#d32f2f;
+      --brand-red-dark:#b71c1c;
+      --brand-yellow:#ffb300;
+      --brand-muted:#6b7280;
+      --surface:#f7f7f9;
+      --card:#ffffff;
+      --text:#1f2937;
+      --card-radius:16px;
+    }
+    /* Dark mode */
+    :root[data-theme="dark"]{
+      --brand-red:#a31616;
+      --brand-red-dark:#820f0f;
+      --brand-yellow:#f1a400;
+      --brand-muted:#9aa1ab;
+      --surface:#121212;
+      --card:#1d1d1f;
+      --text:#eaeaea;
+    }
+
+    body{ background:var(--surface); color:var(--text); }
+    .brand-gradient{ height:8px; background:linear-gradient(90deg,var(--brand-red),var(--brand-yellow)); }
+    .navbar-brand{ font-weight:700; letter-spacing:.2px; }
+    .navbar{ background-color:var(--brand-red)!important; }
+    .navbar .nav-link, .navbar .navbar-brand{ color:#fff!important; }
+    .navbar .nav-link.active{ border-bottom:2px solid #fff; }
+
+    .nav-link{ display:flex; align-items:center; gap:6px; font-weight:500; }
+    .navbar .nav-link:hover{ color:#ffeb3b!important; transform:scale(1.03); transition:.15s; }
+
+    .filter-card{
+      border:none; border-radius: var(--card-radius);
+      background:var(--card);
+      box-shadow: 0 6px 20px rgba(0,0,0,.07);
+    }
+    .filter-card .form-control,.filter-card .form-select{ border-radius:12px; }
+
+    .card{
+      border:none; border-radius: var(--card-radius);
+      background:var(--card);
+      color:var(--text);
+      box-shadow: 0 8px 28px rgba(0,0,0,.06);
+      transition: transform .18s ease, box-shadow .18s ease;
+      overflow:hidden;
+    }
+    .card:hover{ transform: translateY(-3px); box-shadow:0 10px 34px rgba(0,0,0,.10);}
+    .card-img-top{ height:180px; object-fit:cover; }
+    .fav{ font-size:1.2rem; }
+    .fav.text-danger{ text-shadow:0 6px 16px rgba(211,47,47,.25); }
+
+    .btn-primary{ background:var(--brand-red); border-color:var(--brand-red); }
+    .btn-primary:hover{ background:var(--brand-red-dark); border-color:var(--brand-red-dark); }
+
+    .badge-brand{ background:var(--brand-yellow); color:#2b2b2b; }
+    .badge-glow {
+      box-shadow: 0 0 0px rgba(255,179,0,0.0);
+      animation: glow 1.8s ease-in-out infinite;
+      font-weight: 600;
+    }
+    @keyframes glow {
+      0%   { box-shadow: 0 0 0px rgba(255,179,0,0.0); }
+      50%  { box-shadow: 0 0 18px rgba(255,179,0,0.7); }
+      100% { box-shadow: 0 0 0px rgba(255,179,0,0.0); }
+    }
+
+    .muted{ color:var(--brand-muted); }
+    .debug-info{ display:none!important; } /* API base URL gizli */
+    .modal-content{ border:none; border-radius: 16px; background:var(--card); color:var(--text); }
+
+    /* Skeleton loader */
+    .skel{background:linear-gradient(90deg,#e9ecef,#f5f5f5,#e9ecef); background-size:200% 100%; animation:shimmer 1.2s infinite;}
+    @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+    :root[data-theme="dark"] .skel{ background:linear-gradient(90deg,#2a2a2d,#1f1f21,#2a2a2d); }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="navbar navbar-expand-lg shadow-sm sticky-top">
+  <div class="container">
+    <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+      <span style="filter:drop-shadow(0 4px 10px rgba(0,0,0,.15))">🍳</span> H³ Receipes
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div id="mainNav" class="collapse navbar-collapse">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item"><a id="navAll" class="nav-link active" href="#">🍳 Tüm Tarifler</a></li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#">🥕 Kategoriler</a>
+          <ul id="navCats" class="dropdown-menu"></ul>
+        </li>
+        <li class="nav-item"><a id="navFav" class="nav-link" href="#">❤️ Favorilerim</a></li>
+      </ul>
+      <div class="d-flex align-items-center gap-2">
+        <!-- Koyu mod toggler -->
+        <button id="btnTheme" class="btn btn-sm btn-outline-light" title="Koyu/Açık Tema">🌙</button>
+        <!-- Sadece giriş yapıldığında görünecek -->
+        <span id="authState" class="badge badge-brand badge-glow d-none"></span>
+
+        <button id="btnOpenLogin" class="btn btn-light btn-sm">Giriş</button>
+        <button id="btnOpenRegister" class="btn btn-warning btn-sm">Kayıt</button>
+        <button id="btnLogout" class="btn btn-outline-light btn-sm d-none">Çıkış</button>
+      </div>
+    </div>
+  </div>
+</nav>
+<div class="brand-gradient"></div>
+
+<main class="container my-4">
+  <!-- API base url (gizli) -->
+  <div class="debug-info alert alert-light border"><code id="baseUrlInfo"></code></div>
+
+  <!-- Arama/Filtre -->
+  <div class="card filter-card mb-4">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-4"><input id="q" class="form-control" placeholder="Arama (isim, içerik)"></div>
+        <div class="col-md-3"><input id="cat" class="form-control" placeholder="Kategori (örn: Kahvaltı)"></div>
+        <div class="col-md-2">
+          <select id="sortBy" class="form-select">
+            <option value="name">İsme göre</option>
+            <option value="time">Hazırlama süresi</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <select id="sortDir" class="form-select">
+            <option value="asc">Artan</option>
+            <option value="desc">Azalan</option>
+          </select>
+        </div>
+        <div class="col-md-1 d-grid">
+          <button id="btnSearch" class="btn btn-primary">Ara</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Liste -->
+  <div id="recipeList" class="row g-3"></div>
+  <div id="pagination" class="d-flex justify-content-center align-items-center gap-2 my-4"></div>
+</main>
+
+<!-- LOGIN MODAL -->
+<div class="modal fade" id="loginModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form id="loginForm" class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Giriş yap</h5><button class="btn-close" type="button" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <div class="mb-2"><label class="form-label">Kullanıcı adı</label><input name="userName" class="form-control" required></div>
+        <div class="mb-2"><label class="form-label">Şifre</label><input name="password" type="password" class="form-control" required></div>
+        <div id="loginError" class="text-danger small d-none"></div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-primary" type="submit">Giriş</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- REGISTER MODAL -->
+<div class="modal fade" id="registerModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form id="registerForm" class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Kayıt ol</h5><button class="btn-close" type="button" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <div class="mb-2"><label class="form-label">Kullanıcı adı</label><input name="userName" class="form-control" required></div>
+        <div class="mb-2"><label class="form-label">E-posta</label><input name="email" type="email" class="form-control" required></div>
+        <div class="mb-2"><label class="form-label">Şifre</label><input name="password" type="password" class="form-control" required></div>
+        <div id="registerError" class="text-danger small d-none"></div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-primary" type="submit">Kayıt ol</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- DETAY & YORUM MODAL -->
+<div class="modal fade" id="detailModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 id="detailTitle" class="modal-title">Tarif</h5>
+        <div class="d-flex gap-2">
+          <button id="btnShare" class="btn btn-outline-secondary btn-sm" title="Bağlantıyı kopyala">🔗 Paylaş</button>
+          <button class="btn-close" type="button" data-bs-dismiss="modal"></button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div id="detailBody" class="mb-3"></div>
+        <h6 class="mb-2">Yorumlar</h6>
+        <ul id="commentList" class="list-group list-group-flush mb-3"></ul>
+        <form id="commentForm" class="d-flex gap-2">
+          <input id="commentText" class="form-control" placeholder="Yorum yaz...">
+          <button class="btn btn-primary" type="submit">Gönder</button>
+        </form>
+        <div id="commentError" class="text-danger small d-none mt-2"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST (bildirimler) -->
+<div class="position-fixed top-0 end-0 p-3" style="z-index:1100">
+  <div id="appToast" class="toast text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="2000">
+    <div class="d-flex">
+      <div id="toastMsg" class="toast-body">İşlem başarılı</div>
+      <button class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Kapat"></button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ========= AYAR ========= */
+const BASE_URL = "https://localhost:7189"; // ya da "http://localhost:5112"
+const state = {
+  token: localStorage.getItem("token") || null,
+  page:1, pageSize:8,
+  lastSearch:{ q:"", category:"", sortBy:"name", sortDir:"asc" },
+  currentRecipe:null
+};
+const els = {
+  baseUrlInfo: document.getElementById("baseUrlInfo"),
+  authState: document.getElementById("authState"),
+  recipeList: document.getElementById("recipeList"),
+  pagination: document.getElementById("pagination"),
+  navAll: document.getElementById("navAll"),
+  navCats: document.getElementById("navCats"),
+  navFav: document.getElementById("navFav"),
+  q:document.getElementById("q"), cat:document.getElementById("cat"),
+  sortBy:document.getElementById("sortBy"), sortDir:document.getElementById("sortDir"),
+  btnSearch:document.getElementById("btnSearch"),
+  btnOpenLogin:document.getElementById("btnOpenLogin"),
+  btnOpenRegister:document.getElementById("btnOpenRegister"),
+  btnLogout:document.getElementById("btnLogout"),
+  btnTheme:document.getElementById("btnTheme"),
+  loginModal:new bootstrap.Modal(document.getElementById("loginModal")),
+  registerModal:new bootstrap.Modal(document.getElementById("registerModal")),
+  detailModal:new bootstrap.Modal(document.getElementById("detailModal")),
+  loginForm:document.getElementById("loginForm"), loginError:document.getElementById("loginError"),
+  registerForm:document.getElementById("registerForm"), registerError:document.getElementById("registerError"),
+  detailTitle:document.getElementById("detailTitle"), detailBody:document.getElementById("detailBody"),
+  commentList:document.getElementById("commentList"), commentForm:document.getElementById("commentForm"),
+  commentText:document.getElementById("commentText"), commentError:document.getElementById("commentError"),
+  btnShare:document.getElementById("btnShare"),
+  toast: new bootstrap.Toast(document.getElementById('appToast')),
+  toastMsg: document.getElementById('toastMsg')
+};
+els.baseUrlInfo.textContent = BASE_URL;
+
+/* ========= HELPERS ========= */
+const authHeader = ()=> state.token ? { Authorization:`Bearer ${state.token}` } : {};
+function getUserNameFromToken(token) {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.unique_name
+        || payload.name
+        || payload["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"]
+        || payload.sub
+        || null;
+  } catch { return null; }
+}
+function setToken(token){
+  state.token = token;
+  if(token){
+    localStorage.setItem("token",token);
+    const name = getUserNameFromToken(token) || "Kullanıcı";
+    els.authState.textContent = name;
+    els.authState.classList.remove("d-none");
+    els.btnLogout.classList.remove("d-none");
+    els.btnOpenLogin.classList.add("d-none");
+    els.btnOpenRegister.classList.add("d-none");
+    if(state.currentRecipe){ els.commentText.disabled=false; els.commentForm.querySelector("button[type='submit']").disabled=false; }
+  }else{
+    localStorage.removeItem("token");
+    els.authState.classList.add("d-none");
+    els.btnLogout.classList.add("d-none");
+    els.btnOpenLogin.classList.remove("d-none");
+    els.btnOpenRegister.classList.remove("d-none");
+    if(state.currentRecipe){ els.commentText.disabled=true; els.commentForm.querySelector("button[type='submit']").disabled=true; }
+  }
+}
+function parseErr(e){ let t=e?.message?e.message:String(e); try{const o=JSON.parse(t); if(o?.title) return o.title; if(o?.errors) return JSON.stringify(o.errors);}catch{} return t; }
+function showToast(msg, ok=true){
+  els.toastMsg.textContent = msg;
+  const toastEl = document.getElementById('appToast');
+  toastEl.classList.toggle('text-bg-success', ok);
+  toastEl.classList.toggle('text-bg-danger', !ok);
+  els.toast.show();
+}
+
+/* Tema */
+(function initTheme(){
+  const pref = localStorage.getItem('theme') || 'light';
+  setTheme(pref);
+})();
+els.btnTheme.addEventListener('click', ()=> {
+  const cur = document.documentElement.dataset.theme || 'light';
+  setTheme(cur === 'dark' ? 'light':'dark');
+});
+function setTheme(t){
+  document.documentElement.dataset.theme = t;
+  localStorage.setItem('theme', t);
+  els.btnTheme.textContent = t==='dark' ? '☀️' : '🌙';
+}
+
+/* ========= API ========= */
+async function apiGet(url){ const r=await fetch(url,{headers:{...authHeader()}}); if(r.status===401) throw {code:401}; if(!r.ok) throw new Error(await r.text()); return r.json(); }
+async function apiPost(url,data){ const r=await fetch(url,{method:"POST",headers:{ "Content-Type":"application/json",...authHeader()},body:JSON.stringify(data)}); if(r.status===401) throw {code:401}; if(!r.ok) throw new Error(await r.text()); return r.json().catch(()=>({})); }
+async function apiDelete(url){ const r=await fetch(url,{method:"DELETE",headers:{...authHeader()}}); if(r.status===401) throw {code:401}; if(!r.ok && r.status!==204) throw new Error(await r.text()); return true; }
+
+/* ========= SKELETON ========= */
+function renderSkeleton(count=8){
+  const html = Array(count).fill(0).map(()=>`
+    <div class="col-sm-6 col-md-4 col-lg-3">
+      <div class="card h-100">
+        <div class="card-img-top skel" style="height:180px;"></div>
+        <div class="card-body">
+          <div class="skel" style="height:20px; width:60%; border-radius:6px;"></div>
+          <div class="skel mt-2" style="height:14px; width:40%; border-radius:6px;"></div>
+          <div class="skel mt-3" style="height:48px; border-radius:8px;"></div>
+          <div class="skel mt-3" style="height:32px; border-radius:8px;"></div>
+        </div>
+      </div>
+    </div>`).join('');
+  els.recipeList.innerHTML = html;
+}
+
+/* ========= LISTE ========= */
+async function loadRecipes(page=1){
+  state.page=page;
+  renderSkeleton(); // <— yüklenirken skeleton
+  const {q,category,sortBy,sortDir}=state.lastSearch;
+  const qs=new URLSearchParams({q:q||"",category:category||"",page:String(page),pageSize:String(state.pageSize),sortBy,sortDir});
+  try{ const data=await apiGet(`${BASE_URL}/api/recipes/search?${qs}`);
+       renderRecipes(data.items); renderPagination(data.page,data.totalPages); }
+  catch{ const list=await apiGet(`${BASE_URL}/api/recipes`); renderRecipes(list); renderPagination(1,1); }
+}
+function renderRecipes(items=[]){
+  els.recipeList.innerHTML=""; if(!items.length){ els.recipeList.innerHTML=`<div class="col-12"><div class="alert alert-warning">Sonuç bulunamadı.</div></div>`; return; }
+  for(const r of items){
+    const col=document.createElement("div"); col.className="col-sm-6 col-md-4 col-lg-3";
+    col.innerHTML=`
+      <div class="card h-100">
+        <img loading="lazy" onerror="this.src='https://picsum.photos/400/250';" src="${r.imageUrl || "https://picsum.photos/400/250"}" class="card-img-top" alt="${r.name}">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <h5 class="card-title mb-2 pointer" data-action="detail" data-id="${r.id}">${r.name}</h5>
+            <span class="fav pointer ${r.isFavorite?"text-danger":"text-muted"}" data-action="toggleFav" data-id="${r.id}" title="Favori">♥</span>
+          </div>
+          <div class="small muted mb-2">${r.category || "-"} • ${r.preparationTime || 0} dk</div>
+          <p class="card-text">${(r.description||"").slice(0,90)}</p>
+          <button class="btn btn-primary btn-sm w-100" data-action="detail" data-id="${r.id}">Detay</button>
+        </div>
+      </div>`;
+    els.recipeList.appendChild(col);
+  }
+  els.recipeList.querySelectorAll("[data-action='detail']").forEach(el=>el.addEventListener("click",()=>openDetail(el.dataset.id)));
+  els.recipeList.querySelectorAll("[data-action='toggleFav']").forEach(el=>el.addEventListener("click",()=>toggleFavorite(el.dataset.id,el)));
+}
+function renderPagination(page,totalPages){
+  els.pagination.innerHTML=""; if(!totalPages || totalPages<=1) return;
+  const prev=document.createElement("button"); prev.className="btn btn-outline-secondary btn-sm"; prev.textContent="‹"; prev.disabled=page<=1; prev.onclick=()=>loadRecipes(page-1);
+  const next=document.createElement("button"); next.className="btn btn-outline-secondary btn-sm"; next.textContent="›"; next.disabled=page>=totalPages; next.onclick=()=>loadRecipes(page+1);
+  const info=document.createElement("span"); info.className="mx-2 muted"; info.textContent=`Sayfa ${page}/${totalPages}`;
+  els.pagination.append(prev,info,next);
+}
+
+/* ========= DETAY & YORUM ========= */
+async function openDetail(id){
+  const r=await apiGet(`${BASE_URL}/api/recipes/${id}`); state.currentRecipe=r;
+  els.detailTitle.textContent=r.name;
+  els.detailBody.innerHTML=`
+    <div class="row g-3">
+      <div class="col-md-5"><img class="img-fluid rounded" src="${r.imageUrl || "https://picsum.photos/600/400"}" alt="${r.name}"></div>
+      <div class="col-md-7">
+        <p><strong>Kategori:</strong> ${r.category || "-"}</p>
+        <p><strong>Süre:</strong> ${r.preparationTime || 0} dk</p>
+        <p><strong>İçindekiler:</strong> ${r.ingredients || "-"}</p>
+        <p><strong>Tarif:</strong> ${r.steps || "-"}</p>
+      </div>
+    </div>`;
+  await loadComments(id);
+  const logged=!!state.token;
+  els.commentText.disabled=!logged;
+  els.commentForm.querySelector("button[type='submit']").disabled=!logged;
+  els.commentText.placeholder= logged ? "Yorum yaz..." : "Yorum için giriş yapın";
+  els.detailModal.show();
+}
+async function loadComments(recipeId){
+  const list=await apiGet(`${BASE_URL}/api/recipes/${recipeId}/comments`);
+  els.commentList.innerHTML="";
+  if(!list.length){ els.commentList.innerHTML=`<li class="list-group-item text-muted">Henüz yorum yok</li>`; return; }
+  for(const c of list){
+    const li=document.createElement("li"); li.className="list-group-item d-flex justify-content-between align-items-start";
+    li.innerHTML=`<div><div><strong>${c.userName || "Anonim"}</strong> <span class="text-muted small">${new Date(c.createdAt).toLocaleString()}</span></div><div>${c.text}</div></div>
+    <button class="btn btn-sm btn-outline-danger" data-action="delComment" data-id="${c.id}">Sil</button>`;
+    els.commentList.appendChild(li);
+  }
+  els.commentList.querySelectorAll("[data-action='delComment']").forEach(btn=>{
+    btn.addEventListener("click", async ()=>{
+      try{
+        if(!state.token){els.loginModal.show();return;}
+        await apiDelete(`${BASE_URL}/api/recipes/comment/${btn.dataset.id}`);
+        await loadComments(state.currentRecipe.id);
+        showToast('Yorum silindi ✔');
+      }catch(e){
+        if(e.code===401){ els.loginModal.show(); return; }
+        showToast('Yorum silinemedi', false);
+      }
+    });
+  });
+}
+els.commentForm.addEventListener("submit", async e=>{
+  e.preventDefault(); els.commentError.classList.add("d-none");
+  try{
+    if(!state.token){ els.loginModal.show(); return; }
+    const text=els.commentText.value.trim(); if(!text) return;
+    await apiPost(`${BASE_URL}/api/recipes/comment`, { recipeId: state.currentRecipe.id, text });
+    els.commentText.value=""; await loadComments(state.currentRecipe.id);
+    showToast('Yorum gönderildi ✔');
+  }catch(err){
+    if(err.code===401){ els.loginModal.show(); return; }
+    els.commentError.textContent=parseErr(err); els.commentError.classList.remove("d-none");
+    showToast('Yorum gönderilemedi', false);
+  }
+});
+
+/* Paylaşım */
+els.btnShare.addEventListener('click', async ()=>{
+  try{
+    const url = `${location.origin}${location.pathname}#recipe=${state.currentRecipe?.id||""}`;
+    await navigator.clipboard.writeText(url);
+    showToast('Bağlantı kopyalandı ✔');
+  }catch{ showToast('Kopyalanamadı', false); }
+});
+
+/* ========= FAVORI ========= */
+async function toggleFavorite(recipeId, heartEl){
+  try{
+    if(!state.token){ els.loginModal.show(); return; }
+    const favs=await apiGet(`${BASE_URL}/api/favorites`);
+    const isFav=favs.some(f=>f.id===recipeId || f.recipeId===recipeId);
+    if(isFav){
+      await apiDelete(`${BASE_URL}/api/favorites/${recipeId}`);
+      heartEl.classList.remove("text-danger"); heartEl.classList.add("text-muted");
+      showToast('Favoriden çıkarıldı');
+    }else{
+      await apiPost(`${BASE_URL}/api/favorites`, { recipeId });
+      heartEl.classList.remove("text-muted"); heartEl.classList.add("text-danger");
+      showToast('Favorilere eklendi ✔');
+    }
+  }catch(e){
+    if(e.code===401){ els.loginModal.show(); return; }
+    showToast('Favori işlemi başarısız', false);
+  }
+}
+
+/* ========= MENU ========= */
+function setActiveNav(w){ els.navAll.classList.remove("active"); els.navFav.classList.remove("active"); if(w==="all") els.navAll.classList.add("active"); if(w==="fav") els.navFav.classList.add("active"); }
+els.navAll.addEventListener("click",(e)=>{e.preventDefault(); setActiveNav("all"); state.lastSearch={q:"",category:"",sortBy:"name",sortDir:"asc"}; els.q.value=""; els.cat.value=""; loadRecipes(1);});
+els.navFav.addEventListener("click", async (e)=>{
+  e.preventDefault(); setActiveNav("fav");
+  try{
+    const qs=new URLSearchParams({q:"",category:"",page:"1",pageSize:"100",sortBy:"name",sortDir:"asc"});
+    const data=await apiGet(`${BASE_URL}/api/recipes/search?${qs}`).catch(async()=>({items:await apiGet(`${BASE_URL}/api/recipes`),page:1,totalPages:1}));
+    const favs=(data.items||[]).filter(x=>x.isFavorite); renderRecipes(favs); renderPagination(1,1);
+  }catch(err){ if(err.code===401){els.loginModal.show();return;} showToast('Favoriler alınamadı', false); }
+});
+async function buildCategoriesMenu(){
+  try{
+    const data=await apiGet(`${BASE_URL}/api/recipes`);
+    const cats=[...new Set((data||[]).map(x=>(x.category||"").trim()).filter(Boolean))].sort();
+    els.navCats.innerHTML=cats.length? "": `<li><span class="dropdown-item text-muted">Kategori yok</span></li>`;
+    cats.forEach(cat=>{
+      const li=document.createElement("li"); const a=document.createElement("a");
+      a.className="dropdown-item"; a.href="#"; a.textContent=cat;
+      a.addEventListener("click",(e)=>{e.preventDefault(); setActiveNav("all"); els.cat.value=cat; state.lastSearch={...state.lastSearch,category:cat}; loadRecipes(1);});
+      li.appendChild(a); els.navCats.appendChild(li);
+    });
+  }catch{ els.navCats.innerHTML=`<li><span class="dropdown-item text-danger">Kategori hatası</span></li>`; }
+}
+
+/* ========= AUTH ========= */
+document.getElementById("btnOpenLogin").addEventListener("click",()=>els.loginModal.show());
+document.getElementById("btnOpenRegister").addEventListener("click",()=>els.registerModal.show());
+els.btnLogout.addEventListener("click",()=>{ setToken(null); loadRecipes(1); showToast('Çıkış yapıldı'); });
+
+els.loginForm.addEventListener("submit", async e=>{
+  e.preventDefault(); els.loginError.classList.add("d-none");
+  const payload=Object.fromEntries(new FormData(els.loginForm).entries());
+  try{
+    const res=await apiPost(`${BASE_URL}/api/auth/login`, payload);
+    if(res?.token){ setToken(res.token); els.loginModal.hide(); loadRecipes(1); showToast('Giriş başarılı ✔'); }
+    else{ els.loginError.textContent="Token alınamadı"; els.loginError.classList.remove("d-none"); showToast('Giriş başarısız', false); }
+  }catch(err){ els.loginError.textContent=parseErr(err); els.loginError.classList.remove("d-none"); showToast('Giriş başarısız', false); }
+});
+els.registerForm.addEventListener("submit", async e=>{
+  e.preventDefault(); els.registerError.classList.add("d-none");
+  const payload=Object.fromEntries(new FormData(els.registerForm).entries());
+  try{ await apiPost(`${BASE_URL}/api/auth/register`, payload); els.registerModal.hide(); showToast('Kayıt başarılı! Şimdi giriş yapın ✔'); }
+  catch(err){ els.registerError.textContent=parseErr(err); els.registerError.classList.remove("d-none"); showToast('Kayıt başarısız', false); }
+});
+
+/* ========= ARAMA ========= */
+els.btnSearch.addEventListener("click", ()=>{ state.lastSearch={ q:els.q.value.trim(), category:els.cat.value.trim(), sortBy:els.sortBy.value, sortDir:els.sortDir.value }; loadRecipes(1); });
+
+/* ========= INIT ========= */
+setToken(state.token);
+buildCategoriesMenu();
+loadRecipes(1);
+</script>
+</body>
+</html>

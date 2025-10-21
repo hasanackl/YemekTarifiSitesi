@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("YemekTarifAPI")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+15c429ed79e179e0009847832d39053ff8173e53")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2527978c45252967a22896388c8c113ba5bd0357")]
 [assembly: System.Reflection.AssemblyProductAttribute("YemekTarifAPI")]
 [assembly: System.Reflection.AssemblyTitleAttribute("YemekTarifAPI")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
